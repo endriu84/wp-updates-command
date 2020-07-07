@@ -12,8 +12,6 @@ class Updates_Command {
 
 	public $dry_run = '';
 
-	public $quiet = false;
-
 	public $updates = array();
 
 	const CMD_OPT_JSON = [ 'return' => true, 'launch' => true, 'exit_error' => true, 'parse' => 'json' ];
@@ -33,11 +31,6 @@ class Updates_Command {
 		// dry-run
 		if ( isset( $assoc_args['dry-run'] ) ) {
 			$this->dry_run = '--dry-run';
-		}
-
-		// quiet
-		if ( isset( $assoc_args['quiet'] ) ) {
-			$this->quiet = $assoc_args['quiet'];
 		}
 
 		// file
@@ -89,11 +82,6 @@ class Updates_Command {
 	 * [--dry-run]
 	 * : dry run option
 	 *
-	 * [--quiet]
-	 * : quiet option
-	 * ---
-     * default: false
-     *
      * ## EXAMPLES
      *
      *     wp update run --alias=@prod --file=raport.json
@@ -101,9 +89,6 @@ class Updates_Command {
      * @when after_wp_load
      */
 	public function run( $args, $assoc_args ) {
-
-		// print_r( WP_CLI::get_config() );
-		// exit;
 
 		$this->setup( $args, $assoc_args );
 
@@ -147,10 +132,9 @@ class Updates_Command {
 	 * [--dry-run]
 	 * : dry run option
 	 *
-	 * [--quiet]
-	 * : quiet option
-	 * ---
-     * default: false
+	 * ## EXAMPLES
+     *
+     *     wp update rollback --alias=@prod --file=raport.json --session=2
 	 *
 	 */
 	public function rollback( $args, $assoc_args ) {
@@ -169,33 +153,34 @@ class Updates_Command {
 			return;
 		}
 
-		$rollback_report = '';
 		foreach ( $rollaback_record['rich_data'] as $k => $asset ) {
 
 			if ( 'core' === $asset['type'] ) {
-				if ( ! $this->dry_run ) {
-					$result = WP_CLI::runcommand( "{$this->alias} core update --version={$asset['old_version']} --force", self::CMD_OPT );
-				}
-				$rollback_report .= "core to {$asset['old_version']}, ";
-			} else {
-				if ( ! $this->dry_run ) {
-					$result = WP_CLI::runcommand( "{$this->alias} {$asset['type']} update {$asset['name']} --version={$asset['old_version']}", self::CMD_OPT );
-				}
-				$rollback_report .= "{$asset['name']} to {$asset['old_version']}, ";
-			}
 
-			if ( ! $this->quiet && ! $this->dry_run ) {
-				echo "$result\n";
+				$cmd = "{$this->alias} core update --version={$asset['old_version']} --force";
+				WP_CLI::log( "Run command: wp $cmd" );
+				if ( ! $this->dry_run ) {
+					$result = WP_CLI::runcommand( $cmd, self::CMD_OPT );
+					WP_CLI::log(  "Result: $result" );
+				}
+
+			} else {
+
+				// TODO --dry-run option available but not really working ?
+				$cmd = "{$this->alias} {$asset['type']} update {$asset['name']} --version={$asset['old_version']}";
+				WP_CLI::log( "Run command: wp $cmd" );
+				if ( ! $this->dry_run ) {
+					$result = WP_CLI::runcommand( $cmd, self::CMD_OPT );
+					WP_CLI::log(  "Result: $result" );
+				}
 			}
 		}
 
-		$rollback_report = trim( $rollback_report, ', ' );
-
-		WP_CLI::success( "Rollback completed! ($rollback_report)" );
+		WP_CLI::success( "Rollback completed!" );
 	}
 
 	/**
-	 * List available updates, by date - can be used to perform rollback
+	 * List available updates by session
 	 *
 	 * ## OPTIONS
 	 *
@@ -203,6 +188,10 @@ class Updates_Command {
 	 * : Path to the report json file ( local or remote )
 	 * ---
      * default: updates.json
+	 *
+	 * ## EXAMPLES
+     *
+     *     wp update list --alias=@prod --file=../.updates/raport.json
 	 *
 	 */
 	public function list( $args, $assoc_args ) {
@@ -248,14 +237,21 @@ class Updates_Command {
 
 		$result = '';
 		if ( $available_version ) { // null or version number
-
 			$current_version = get_bloginfo( 'version' );
 
+			$cmd = "{$this->alias} core update";
+			WP_CLI::log( "Run command: wp $cmd" );
+
 			if ( ! $this->dry_run ) { // no dry-run available for core update
-				$result = WP_CLI::runcommand( "{$this->alias} core update", self::CMD_OPT );
+				$result = WP_CLI::runcommand( $cmd, self::CMD_OPT );
+				WP_CLI::log( "Result: $result" );
 			}
 
-			$db_result = WP_CLI::runcommand( "{$this->alias} core update-db {$this->dry_run}", self::CMD_OPT );
+			$cmd = "{$this->alias} core update-db {$this->dry_run}";
+			WP_CLI::log( "Run command: wp $cmd" );
+
+			$db_result = WP_CLI::runcommand( $cmd, self::CMD_OPT );
+			WP_CLI::log( "Result: $db_result" );
 
 			if ( $this->version_exists_in_report( 'core', 'core', $available_version ) ) {
 				return;
@@ -281,12 +277,17 @@ class Updates_Command {
 	 */
 	private function update_plugins() {
 
-		$update_results = WP_CLI::runcommand( "{$this->alias} plugin update --all --format=json {$this->dry_run}", self::CMD_OPT_JSON );
+		$cmd = "{$this->alias} plugin update --all --format=json {$this->dry_run}";
+		WP_CLI::log( "Run command: wp $cmd" );
+
+		$update_results = WP_CLI::runcommand( $cmd, self::CMD_OPT_JSON );
 
 		if ( is_array( $update_results ) && ! empty( $update_results ) ) {
 			foreach ( $update_results as $result ) {
 
-				$data = WP_CLI::runcommand( "{$this->alias} plugin get {$result['name']} --fields=title,author,status,description --format=json {$this->dry_run}", self::CMD_OPT_JSON );
+				WP_CLI::log( "Result: {$result['name']} updated to version {$result['new_version']}" );
+
+				$data = WP_CLI::runcommand( "{$this->alias} plugin get {$result['name']} --fields=title,author,status,description --format=json", self::CMD_OPT_JSON );
 				if ( $this->version_exists_in_report( 'plugin', $result['name'], $result['new_version'] ) ) {
 					continue;
 				}
@@ -310,12 +311,17 @@ class Updates_Command {
 	 */
 	private function update_themes() {
 
-		$update_results = WP_CLI::runcommand( "{$this->alias} theme update --all --format=json {$this->dry_run}", self::CMD_OPT_JSON );
+		$cmd = "{$this->alias} theme update --all --format=json {$this->dry_run}";
+		WP_CLI::log( "Run command: wp $cmd" );
+
+		$update_results = WP_CLI::runcommand( $cmd, self::CMD_OPT_JSON );
 
 		if ( is_array( $update_results ) && ! empty( $update_results ) ) {
 			foreach ( $update_results as $result ) {
 
-				$data = WP_CLI::runcommand( "{$this->alias} theme get {$result['name']} --fields=title,author,status,description --format=json {$this->dry_run}", self::CMD_OPT_JSON );
+				WP_CLI::log( "Result: {$result['name']} updated to version {$result['new_version']}" );
+
+				$data = WP_CLI::runcommand( "{$this->alias} theme get {$result['name']} --fields=title,author,status,description --format=json", self::CMD_OPT_JSON );
 				if ( $this->version_exists_in_report( 'theme', $result['name'], $result['new_version'] ) ) {
 					continue;
 				}
@@ -340,12 +346,20 @@ class Updates_Command {
 	 */
 	private function update_translations() {
 
-		$core_translations = WP_CLI::runcommand( "{$this->alias} language core update {$this->dry_run}" , self::CMD_OPT );
-		if ( ! $this->quiet ) echo "$core_translations\n";
-		$plugin_translations = WP_CLI::runcommand( "{$this->alias} language plugin update --all {$this->dry_run}", self::CMD_OPT );
-		if ( ! $this->quiet ) echo "$plugin_translations\n";
-		$theme_translations = WP_CLI::runcommand( "{$this->alias} language theme update --all {$this->dry_run}", self::CMD_OPT );
-		if ( ! $this->quiet ) echo "$theme_translations\n";
+		$cmd = "{$this->alias} language core update {$this->dry_run}";
+		WP_CLI::log( "Run command: wp $cmd" );
+		$core_translations = WP_CLI::runcommand( $cmd, self::CMD_OPT );
+		WP_CLI::log( "Result: $core_translations" );
+
+		$cmd = "{$this->alias} language plugin update --all {$this->dry_run}";
+		WP_CLI::log( "Run command: wp $cmd" );
+		$plugin_translations = WP_CLI::runcommand( $cmd, self::CMD_OPT );
+		WP_CLI::log( "Result: $plugin_translations" );
+
+		$cmd = "{$this->alias} language theme update --all {$this->dry_run}";
+		WP_CLI::log( "Run command: wp $cmd" );
+		$theme_translations = WP_CLI::runcommand( $cmd, self::CMD_OPT );
+		WP_CLI::log( "Result: $theme_translations" );
 	}
 
 	/**
@@ -355,9 +369,12 @@ class Updates_Command {
 	 */
 	private function optimize_db() {
 
+		$cmd = "{$this->alias} db optimize";
+		WP_CLI::log( "Run command: wp $cmd" );
+
 		if ( ! $this->dry_run ) {
-			$result = WP_CLI::runcommand( "{$this->alias} db optimize", self::CMD_OPT );
-			if ( ! $this->quiet ) echo "$result\n";
+			$result = WP_CLI::runcommand( $cmd, self::CMD_OPT );
+			WP_CLI::log( "Result: $result" );
 		}
 	}
 
