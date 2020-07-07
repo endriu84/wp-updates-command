@@ -1,0 +1,17 @@
+{
+    "name": "endriu84/wp-updates-command",
+    "description": "",
+    "type": "wp-cli-package",
+    "homepage": "https://github.com/endriu84/wp-updates-command",
+    "license": "MIT",
+    "authors": [],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "files": [ "command.php" ]
+    },
+    "require": {},
+    "require-dev": {
+        "behat/behat": "~2.5"
+    }
+}
