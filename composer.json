@@ -4,14 +4,21 @@
     "type": "wp-cli-package",
     "homepage": "https://github.com/endriu84/wp-updates-command",
     "license": "MIT",
-    "authors": [],
+    "authors": [
+        {
+            "name": "Andrzej Misiewicz",
+            "email": "andrzej@pandasoft.pl",
+            "homepage": "https://pandasoft.pl"
+        }
+    ],
     "minimum-stability": "dev",
     "prefer-stable": true,
     "autoload": {
-        "files": [ "command.php" ]
+        "psr-4": {
+            "": "src/"
+        },
+        "files": [ "updates-command.php" ]
     },
     "require": {},
-    "require-dev": {
-        "behat/behat": "~2.5"
-    }
+    "require-dev": {}
 }

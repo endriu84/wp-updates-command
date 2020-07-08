@@ -1,2 +1,2 @@
 require:
-  - command.php
+  - updates-command.php

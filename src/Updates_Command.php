@@ -1,70 +1,46 @@
 <?php
+use \WP_CLI\Utils;
 
-if ( ! class_exists( 'WP_CLI' ) ) {
-	return;
-}
+class Updates_Command extends WP_CLI_Command {
 
-class Updates_Command {
-
+	/**
+	 * Undocumented variable
+	 *
+	 * @var string
+	 */
 	public $alias = '';
 
+	/**
+	 * Undocumented variable
+	 *
+	 * @var string
+	 */
 	public $file = '';
 
+	/**
+	 * Undocumented variable
+	 *
+	 * @var string
+	 */
 	public $dry_run = '';
 
+	/**
+	 * Undocumented variable
+	 *
+	 * @var array
+	 */
 	public $updates = array();
 
+	/**
+	 *
+	 */
 	const CMD_OPT_JSON = [ 'return' => true, 'launch' => true, 'exit_error' => true, 'parse' => 'json' ];
 
+	/**
+	 *
+	 */
 	const CMD_OPT = [ 'return' => true, 'launch' => true, 'exit_error' => true, 'parse' => false ];
 
-
-	private function setup( $args, $assoc_args ) {
-
-		// alias
-		if ( isset( $assoc_args['alias'] ) ) {
-			if ( isset( WP_CLI::get_runner()->aliases[ $assoc_args['alias'] ] ) ) {
-				$this->alias = $assoc_args['alias'];
-			}
-		}
-
-		// dry-run
-		if ( isset( $assoc_args['dry-run'] ) ) {
-			$this->dry_run = '--dry-run';
-		}
-
-		// file
-		if ( isset( $assoc_args['file'] ) ) {
-
-			if ( filter_var( $assoc_args['file'], FILTER_VALIDATE_URL ) ) {
-				$this->file = filter_var( $assoc_args['file'], FILTER_SANITIZE_URL );
-			} else {
-				$dirname = dirname( ABSPATH . $assoc_args['file'] );
-				if ( ! file_exists( $dirname ) ) {
-					mkdir( $dirname );
-				}
-				$this->file = $dirname . '/' . basename( $assoc_args['file'] );
-
-				if ( ! file_exists( $this->file ) ) {
-					touch( $this->file );
-					$this->updates = [
-						'core' => [],
-						'plugin' => [],
-						'theme' => [],
-						'translation' => []
-					];
-
-				} else {
-
-					$this->updates = json_decode( file_get_contents( $this->file ), true );
-				}
-			}
-		}
-
-		$this->session = $this->current_session();
-
-		$this->date = date_i18n( 'd-m-Y H:i' );
-	}
 
 	/**
      * Run all available updates (core / plugins / theme / db / translation) and save raport to the file
@@ -75,7 +51,7 @@ class Updates_Command {
      * : Run command against the remote server ( alias listed in wp-cli.yml )
      *
 	 * [--file=<text>]
-	 * : Path to the json file, where report will be saved
+	 * : Path to the json file, where report will be saved. Path is relative to ABSPATH, so double dots can be used to move up in directory structure. If directory not exists, it will be created.
 	 * ---
      * default: updates.json
 	 *
@@ -84,7 +60,7 @@ class Updates_Command {
 	 *
      * ## EXAMPLES
      *
-     *     wp update run --alias=@prod --file=raport.json
+     *     wp update run --alias=@prod --file=../directory/raport.json
      *
      * @when after_wp_load
      */
@@ -125,7 +101,7 @@ class Updates_Command {
      * default: updates.json
 	 *
 	 * [--session=<number>]
-	 * : Rollback to specific session number (use `wp update list` to list available dates )
+	 * : Rollback to specific updates session (use `wp updates list` to list available sessions )
 	 * ---
      * default: latest
 	 *
@@ -134,7 +110,7 @@ class Updates_Command {
 	 *
 	 * ## EXAMPLES
      *
-     *     wp update rollback --alias=@prod --file=raport.json --session=2
+     *     wp updates rollback --alias=@prod --file=raport.json --session=2
 	 *
 	 */
 	public function rollback( $args, $assoc_args ) {
@@ -193,6 +169,12 @@ class Updates_Command {
      *
      *     wp update list --alias=@prod --file=../.updates/raport.json
 	 *
+	 * 	   +---------+------------------+-------+-------------------+
+	 *	   | session | date             | count | assets            |
+	 *	   +---------+------------------+-------+-------------------+
+	 *	   | 1       | 08-07-2020 09:23 | 2     | core,twentytwenty |
+	 *	   +---------+------------------+-------+-------------------+
+	 *
 	 */
 	public function list( $args, $assoc_args ) {
 
@@ -214,13 +196,55 @@ class Updates_Command {
 	/**
 	 * Undocumented function
 	 *
+	 * @param [type] $args
+	 * @param [type] $assoc_args
 	 * @return void
 	 */
-	public function register() {
+	private function setup( $args, $assoc_args ) {
 
-		WP_CLI::add_command( 'updates run', array( $this, 'run' ) );
-		WP_CLI::add_command( 'updates rollback', array( $this, 'rollback' ) );
-		WP_CLI::add_command( 'updates list', array( $this, 'list' ) );
+		// alias
+		if ( $alias = Utils\get_flag_value( $assoc_args, 'alias' ) ) {
+			if ( isset( WP_CLI::get_runner()->aliases[ $alias ] ) ) {
+				$this->alias = $alias;
+			}
+		}
+
+		// dry-run
+		if ( Utils\get_flag_value( $assoc_args, 'dry-run' ) ) {
+			$this->dry_run = '--dry-run';
+		}
+
+		// file
+		if ( $file = Utils\get_flag_value( $assoc_args, 'file' ) ) {
+
+			if ( filter_var( $file, FILTER_VALIDATE_URL ) ) {
+				$this->file = filter_var( $file, FILTER_SANITIZE_URL );
+			} else {
+				$dirname = dirname( ABSPATH . $file );
+				if ( ! file_exists( $dirname ) ) {
+					mkdir( $dirname );
+				}
+				$this->file = $dirname . '/' . basename( $file );
+
+				if ( ! file_exists( $this->file ) ) {
+					touch( $this->file );
+					$this->updates = [
+						'core' => [],
+						'plugin' => [],
+						'theme' => [],
+						'translation' => []
+					];
+
+				} else {
+
+					$this->updates = json_decode( file_get_contents( $this->file ), true );
+				}
+			}
+		}
+
+		$this->session = $this->current_session();
+
+		$this->date = date_i18n( 'd-m-Y H:i' );
 	}
 
 	/**
@@ -505,6 +529,3 @@ class Updates_Command {
 		}
 	}
 }
-
-$updates_command = new Updates_Command();
-$updates_command->register();
