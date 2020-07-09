@@ -209,20 +209,22 @@ class Updates_Command extends WP_CLI_Command {
 	 */
 	private function setup( $args, $assoc_args ) {
 
-		// alias
-		if ( $alias = Utils\get_flag_value( $assoc_args, 'alias' ) ) {
+		// alias.
+		$alias = Utils\get_flag_value( $assoc_args, 'alias' );
+		if ( $alias ) {
 			if ( isset( WP_CLI::get_runner()->aliases[ $alias ] ) ) {
 				$this->alias = $alias;
 			}
 		}
 
-		// dry-run
+		// dry-run.
 		if ( Utils\get_flag_value( $assoc_args, 'dry-run' ) ) {
 			$this->dry_run = '--dry-run';
 		}
 
-		// file
-		if ( $file = Utils\get_flag_value( $assoc_args, 'file' ) ) {
+		// file.
+		$file = Utils\get_flag_value( $assoc_args, 'file' );
+		if ( $file ) {
 
 			if ( filter_var( $file, FILTER_VALIDATE_URL ) ) {
 				$this->file = filter_var( $file, FILTER_SANITIZE_URL );
@@ -234,13 +236,18 @@ class Updates_Command extends WP_CLI_Command {
 				$this->file = $dirname . '/' . basename( $file );
 
 				if ( ! file_exists( $this->file ) ) {
-					touch( $this->file );
+					$website = WP_CLI::runcommand( "{$this->alias} option get siteurl --format=json", self::CMD_OPT_JSON );
+
 					$this->updates = array(
+						'website'     => $website,
+						'date'        => date_i18n( 'F Y' ),
 						'core'        => array(),
 						'plugin'      => array(),
 						'theme'       => array(),
 						'translation' => array(),
 					);
+
+					$this->maybe_save();
 
 				} else {
 
