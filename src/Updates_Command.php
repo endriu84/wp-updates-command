@@ -34,36 +34,46 @@ class Updates_Command extends WP_CLI_Command {
 	/**
 	 *
 	 */
-	const CMD_OPT_JSON = [ 'return' => true, 'launch' => true, 'exit_error' => true, 'parse' => 'json' ];
+	const CMD_OPT_JSON = array(
+		'return'     => true,
+		'launch'     => true,
+		'exit_error' => true,
+		'parse'      => 'json',
+	);
 
 	/**
 	 *
 	 */
-	const CMD_OPT = [ 'return' => true, 'launch' => true, 'exit_error' => true, 'parse' => false ];
+	const CMD_OPT = array(
+		'return'     => true,
+		'launch'     => true,
+		'exit_error' => true,
+		'parse'      => false,
+	);
 
 
 	/**
-     * Run all available updates (core / plugins / theme / db / translation) and save raport to the file
-     *
-     * ## OPTIONS
-     *
-     * [--alias=<text>]
-     * : Run command against the remote server ( alias listed in wp-cli.yml )
-     *
+	 * Run all available updates (core / plugins / theme / db / translation) and save raport to the file
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--alias=<text>]
+	 * : Run command against the remote server ( alias listed in wp-cli.yml )
+	 *
 	 * [--file=<text>]
 	 * : Path to the json file, where report will be saved. Path is relative to ABSPATH, so double dots can be used to move up in directory structure. If directory not exists, it will be created.
 	 * ---
-     * default: updates.json
+	 * default: updates.json
 	 *
 	 * [--dry-run]
 	 * : dry run option
 	 *
-     * ## EXAMPLES
-     *
-     *     wp update run --alias=@prod --file=../directory/raport.json
-     *
-     * @when after_wp_load
-     */
+	 * ## EXAMPLES
+	 *
+	 *     wp update run --alias=@prod --file=../directory/raport.json
+	 *
+	 * @when after_wp_load
+	 */
 	public function run( $args, $assoc_args ) {
 
 		$this->setup( $args, $assoc_args );
@@ -83,7 +93,7 @@ class Updates_Command extends WP_CLI_Command {
 		if ( $result['count'] > 0 ) {
 			WP_CLI::success( "{$result['count']} asset(s) was/were updated ({$result['assets']})" );
 		} else {
-			WP_CLI::success( "Everything is up to date!" );
+			WP_CLI::success( 'Everything is up to date!' );
 		}
 	}
 
@@ -93,25 +103,24 @@ class Updates_Command extends WP_CLI_Command {
 	 * ## OPTIONS
 	 *
 	 * [--alias=<text>]
-     * : Run command against the remote server ( alias listed in wp-cli.yml )
-     *
+	 * : Run command against the remote server ( alias listed in wp-cli.yml )
+	 *
 	 * [--file=<text>]
 	 * : Path to the report json file ( local or remote )
 	 * ---
-     * default: updates.json
+	 * default: updates.json
 	 *
 	 * [--session=<number>]
 	 * : Rollback to specific updates session (use `wp updates list` to list available sessions )
 	 * ---
-     * default: latest
+	 * default: latest
 	 *
 	 * [--dry-run]
 	 * : dry run option
 	 *
 	 * ## EXAMPLES
-     *
-     *     wp updates rollback --alias=@prod --file=raport.json --session=2
 	 *
+	 *     wp updates rollback --alias=@prod --file=raport.json --session=2
 	 */
 	public function rollback( $args, $assoc_args ) {
 
@@ -137,9 +146,8 @@ class Updates_Command extends WP_CLI_Command {
 				WP_CLI::log( "Run command: wp $cmd" );
 				if ( ! $this->dry_run ) {
 					$result = WP_CLI::runcommand( $cmd, self::CMD_OPT );
-					WP_CLI::log(  "Result: $result" );
+					WP_CLI::log( "Result: $result" );
 				}
-
 			} else {
 
 				// TODO --dry-run option available but not really working ?
@@ -147,12 +155,12 @@ class Updates_Command extends WP_CLI_Command {
 				WP_CLI::log( "Run command: wp $cmd" );
 				if ( ! $this->dry_run ) {
 					$result = WP_CLI::runcommand( $cmd, self::CMD_OPT );
-					WP_CLI::log(  "Result: $result" );
+					WP_CLI::log( "Result: $result" );
 				}
 			}
 		}
 
-		WP_CLI::success( "Rollback completed!" );
+		WP_CLI::success( 'Rollback completed!' );
 	}
 
 	/**
@@ -163,18 +171,17 @@ class Updates_Command extends WP_CLI_Command {
 	 * [--file=<text>]
 	 * : Path to the report json file ( local or remote )
 	 * ---
-     * default: updates.json
+	 * default: updates.json
 	 *
 	 * ## EXAMPLES
-     *
-     *     wp update list --alias=@prod --file=../.updates/raport.json
 	 *
-	 * 	   +---------+------------------+-------+-------------------+
-	 *	   | session | date             | count | assets            |
-	 *	   +---------+------------------+-------+-------------------+
-	 *	   | 1       | 08-07-2020 09:23 | 2     | core,twentytwenty |
-	 *	   +---------+------------------+-------+-------------------+
+	 *     wp update list --alias=@prod --file=../.updates/raport.json
 	 *
+	 *     +---------+------------------+-------+-------------------+
+	 *     | session | date             | count | assets            |
+	 *     +---------+------------------+-------+-------------------+
+	 *     | 1       | 08-07-2020 09:23 | 2     | core,twentytwenty |
+	 *     +---------+------------------+-------+-------------------+
 	 */
 	public function list( $args, $assoc_args ) {
 
@@ -184,7 +191,7 @@ class Updates_Command extends WP_CLI_Command {
 
 		if ( $sessions = $this->sessions_list() ) {
 
-			$formatter = new \WP_CLI\Formatter( $assoc_args, [ 'session', 'date', 'count', 'assets' ] );
+			$formatter = new \WP_CLI\Formatter( $assoc_args, array( 'session', 'date', 'count', 'assets' ) );
 			$formatter->display_items( $sessions );
 
 		} else {
@@ -228,16 +235,16 @@ class Updates_Command extends WP_CLI_Command {
 
 				if ( ! file_exists( $this->file ) ) {
 					touch( $this->file );
-					$this->updates = [
-						'core' => [],
-						'plugin' => [],
-						'theme' => [],
-						'translation' => []
-					];
+					$this->updates = array(
+						'core'        => array(),
+						'plugin'      => array(),
+						'theme'       => array(),
+						'translation' => array(),
+					);
 
 				} else {
 
-					$this->updates = json_decode( file_get_contents( $this->file ), true );
+					$this->updates = wp_json_decode( file_get_contents( $this->file ), true );
 				}
 			}
 		}
@@ -281,14 +288,14 @@ class Updates_Command extends WP_CLI_Command {
 				return;
 			}
 
-			$this->updates['core'][] = [
-				'date' => $this->date,
-				'session' => $this->session,
+			$this->updates['core'][] = array(
+				'date'        => $this->date,
+				'session'     => $this->session,
 				'old_version' => $current_version,
 				'new_version' => $available_version,
-				'result' => $result,
-				'db_result' => $db_result
-			];
+				'result'      => $result,
+				'db_result'   => $db_result,
+			);
 		}
 
 		$this->maybe_save();
@@ -317,10 +324,12 @@ class Updates_Command extends WP_CLI_Command {
 				}
 
 				$this->updates['plugin'][] = array_merge(
-					[
-						'date' => $this->date,
-						'session' => $this->session
-					], $result, $data
+					array(
+						'date'    => $this->date,
+						'session' => $this->session,
+					),
+					$result,
+					$data
 				);
 			}
 		}
@@ -350,10 +359,12 @@ class Updates_Command extends WP_CLI_Command {
 					continue;
 				}
 				$this->updates['theme'][] = array_merge(
-					[
-						'date' => $this->date,
-						'session' => $this->session
-					], $result, $data
+					array(
+						'date'    => $this->date,
+						'session' => $this->session,
+					),
+					$result,
+					$data
 				);
 			}
 		}
@@ -437,8 +448,8 @@ class Updates_Command extends WP_CLI_Command {
 			return false;
 		}
 
-		$list = [];
-		for ( $i=1; $i < $this->session; $i++ ) {
+		$list = array();
+		for ( $i = 1; $i < $this->session; $i++ ) {
 			if ( $record = $this->get_rollback_record( $i ) ) {
 				$list[] = $record;
 			}
@@ -453,14 +464,14 @@ class Updates_Command extends WP_CLI_Command {
 	 * @param [type] $session
 	 * @return void
 	 */
-	private function get_rollback_record( $session, $rich_data=false ) {
+	private function get_rollback_record( $session, $rich_data = false ) {
 
-		$rollback_record = [
+		$rollback_record = array(
 			'session' => $session,
-			'date' => '',
-			'count' => 0,
-			'assets' => ''
-		];
+			'date'    => '',
+			'count'   => 0,
+			'assets'  => '',
+		);
 
 		if ( is_array( $this->updates ) ) {
 			foreach ( $this->updates as $key => $records ) {
@@ -468,17 +479,17 @@ class Updates_Command extends WP_CLI_Command {
 					foreach ( $records as $single_record ) {
 						if ( $single_record['session'] === $session ) {
 							$rollback_record['count']++;
-							$rollback_record['date'] = $single_record['date'];
+							$rollback_record['date']    = $single_record['date'];
 							$rollback_record['assets'] .= isset( $single_record['name'] ) ? $single_record['name'] : 'core';
 							$rollback_record['assets'] .= ',';
 
 							if ( $rich_data ) {
-								$rollback_record['rich_data'][] = [
-									'type' => $key,
-									'name' => isset( $single_record['name'] ) ? $single_record['name'] : 'core',
+								$rollback_record['rich_data'][] = array(
+									'type'        => $key,
+									'name'        => isset( $single_record['name'] ) ? $single_record['name'] : 'core',
 									'old_version' => $single_record['old_version'],
-									'new_version' => $single_record['new_version']
-								];
+									'new_version' => $single_record['new_version'],
+								);
 							}
 						}
 					}
@@ -525,7 +536,7 @@ class Updates_Command extends WP_CLI_Command {
 	private function maybe_save() {
 
 		if ( ! $this->dry_run ) {
-			file_put_contents( $this->file, json_encode( $this->updates ) );
+			file_put_contents( $this->file, wp_json_encode( $this->updates ) );
 		}
 	}
 }
