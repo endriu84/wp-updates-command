@@ -251,7 +251,7 @@ class Updates_Command extends WP_CLI_Command {
 
 				} else {
 
-					$this->updates = wp_json_decode( file_get_contents( $this->file ), true );
+					$this->updates = json_decode( file_get_contents( $this->file ), true );
 				}
 			}
 		}
